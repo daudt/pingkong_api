@@ -4,15 +4,19 @@ module Api
 
     # GET /rankings
     def index
-      @rankings = User.all.order(:rating => :desc)
+      @rankings = User.where(approved: true).order(:rating => :desc)
       render json: @rankings
     end
 
     # GET /rankings/1
     def show
-      user = User.find(params[:id])
-      rankings = user.rankings
-      render json: rankings
+      user = User.find_by(id: params[:id], approved: true)
+      if user
+        rankings = user.rankings
+        render json: rankings
+      else
+        render json: {message: 'User not found'}, status: :not_found
+      end
     end
 
     # POST /rankings

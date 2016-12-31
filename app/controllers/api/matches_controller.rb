@@ -2,7 +2,7 @@ module Api
   class MatchesController < ApplicationController
     before_action :set_match, only: [:show, :update, :destroy]
     before_action :authenticate_api_user!, only: [:create, :update, :destroy]
-    before_action :validate_user, only: [:update, :destroy, :create]
+    before_action :validate_current_user_in_match, only: [:update, :destroy, :create]
 
     # GET /matches
     def index
@@ -18,8 +18,8 @@ module Api
     # POST /matches
     def create
       @match = Match.new(match_params)
-      player1 = User.find(params[:player1])
-      player2 = User.find(params[:player2])
+      player1 = User.find_by(id: params[:player1], approved: true)
+      player2 = User.find_by(id: params[:player2], approved: true)
       @match.users = [ player1, player2 ]
       winner = Winner.new
       if player1.id == params[:winner].to_i
@@ -64,7 +64,7 @@ module Api
     end
 
     def update_elo
-      User.all.each do |user|
+      User.where(approved: true).each do |user|
         user.rating = 1000
         user.save!
       end
@@ -91,7 +91,7 @@ module Api
       end
 
       elo_players.each do |user_id, elo_player|
-        user = User.find(user_id)
+        user = User.find_by(id: user_id, approved: true)
         user.rating = elo_player.rating
         user.save!
       end
@@ -103,7 +103,7 @@ module Api
       player2.rankings << Ranking.create!(rating: player2.rating)
     end
 
-    def validate_user
+    def validate_current_user_in_match
       if [params[:player1], params[:player2]].include?(current_api_user.id) || current_api_user.admin?
         #noop
       else

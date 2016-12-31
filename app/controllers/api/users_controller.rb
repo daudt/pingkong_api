@@ -1,12 +1,15 @@
 module Api
   class UsersController < ApplicationController
     before_action :set_user, only: [:show, :update, :destroy]
-    before_action :authenticate_api_user!
+    before_action :authenticate_api_user!, except: :approve
 
     # GET /users
     def index
-      @users = User.all
-
+      if params[:approved] == 'false'
+        @users = User.where(approved: false)
+      else
+        @users = User.all
+      end
       render json: @users
     end
 
@@ -37,6 +40,17 @@ module Api
     # DELETE /users/1
     def destroy
       @user.destroy
+    end
+
+    def approve
+      @user = User.find_by_uuid(params[:uuid])
+      if @user
+        @user.approved = true
+        @user.save!
+        render json: @user
+      else
+        render json: {message: 'We ain\'t got that user'}, status: :not_found
+      end
     end
 
     private
