@@ -4,13 +4,13 @@ module Api
 
     # GET /rankings
     def index
-      @rankings = User.where(approved: true).order(:rating => :desc)
+      @rankings = User.all.order(:rating => :desc)
       render json: @rankings
     end
 
     # GET /rankings/1
     def show
-      user = User.find_by(id: params[:id], approved: true)
+      user = User.find(params[:id])
       if user
         rankings = user.rankings
         render json: rankings

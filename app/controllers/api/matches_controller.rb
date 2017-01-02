@@ -3,6 +3,7 @@ module Api
     before_action :set_match, only: [:show, :update, :destroy]
     before_action :authenticate_api_user!, only: [:create, :update, :destroy]
     before_action :validate_current_user_in_match, only: [:update, :destroy, :create]
+    before_action :validate_user_is_approved, only: [:update, :destroy, :create]
 
     # GET /matches
     def index
@@ -18,8 +19,8 @@ module Api
     # POST /matches
     def create
       @match = Match.new(match_params)
-      player1 = User.find_by(id: params[:player1], approved: true)
-      player2 = User.find_by(id: params[:player2], approved: true)
+      player1 = User.find(params[:player1])
+      player2 = User.find(params[:player2])
       @match.users = [ player1, player2 ]
       winner = Winner.new
       if player1.id == params[:winner].to_i
@@ -64,7 +65,7 @@ module Api
     end
 
     def update_elo
-      User.where(approved: true).each do |user|
+      User.all.each do |user|
         user.rating = 1000
         user.save!
       end
@@ -91,7 +92,7 @@ module Api
       end
 
       elo_players.each do |user_id, elo_player|
-        user = User.find_by(id: user_id, approved: true)
+        user = User.find(user_id)
         user.rating = elo_player.rating
         user.save!
       end
@@ -108,6 +109,14 @@ module Api
         #noop
       else
         render json: {message: 'Son, you got a panty on your head!'}, status: :unauthorized
+      end
+    end
+
+    def validate_user_is_approved
+      if current_api_user.approved?
+        #noop
+      else
+        render json: {message: 'Your account has not been approved yet'} , status: :unauthorized
       end
     end
 
